@@ -5,16 +5,17 @@
  
 #define SERVER_PORT 9999     /* define a server port number */ 
 
-int main( int argc, char* argv[], char* userName )
+int main( int argc, char* argv[])
 {
 	int sockDesc; //Used to store the descriptor that references the socket
 	struct sockaddr_in serverAddr = { AF_INET, htons( SERVER_PORT ) };
 	char buf[512];
+	char msg[512 + sizeof(argv[2]) + 2];
 	struct hostent *hp;
 
-	if( argc != 2 )
+	if( argc != 3 )
 	{
-		printf( "Usage: %s hostname\n", argv[0] );
+		printf( "Usage: %s hostname username\n", argv[0] );
 		exit(1);
 	}
 	
@@ -46,10 +47,12 @@ int main( int argc, char* argv[], char* userName )
 
 	while( gets(&buf) != EOF )
 	{
-		write( sockDesc, userName, sizeof(userName) );
-		write( sockDesc, ": ", 2 );
-		write( sockDesc, buf, sizeof(buf) );
-		read( sockDesc, buf, sizeof(buf) );
+		strcpy(msg, argv[2]);
+		strcat(msg, ": ");
+		strcat(msg, buf);
+		write( sockDesc, msg, sizeof(msg) );
+		printf("WRITE COMPLETE\n");
+		read( sockDesc, msg, sizeof(msg) );
 		printf( "SERVER ECHOED: %s\n", buf );
 	}
 	
