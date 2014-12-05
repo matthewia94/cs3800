@@ -7,27 +7,26 @@
 * @version 0.1
 ******************************************************************************/
 
-//#include <pthread>
+#include "chatroom.h"
 #include <signal.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
-#include <netdb.h>
-#include <sys/types.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 
-#define SERVER_PORT 9999
+void *clientHandle( void* sock_addr );
 
 int main(int argc, char** argv)
 {
+
+    //Create the socket addresses for client and server
     struct sockaddr_in server_addr = { AF_INET, htons( SERVER_PORT ) };
 	struct sockaddr_in client_addr = { AF_INET  };
+
 	int client_len = sizeof( client_addr );
 	char buffer[512], *host;
-	
 	int sock, ns, k, pid;
 
-	//Stream socket
+	//Open the socket
 	if( ( sock = socket( AF_INET, SOCK_STREAM, 0 ) ) == -1 )
 	{
 		printf("Server: Socket failed\n");
@@ -64,7 +63,7 @@ int main(int argc, char** argv)
         while( (k = read(ns, buffer, sizeof(buffer))) != 0)
         {
             printf("SERVER(Child) RECIEVED: %s\n", buffer);
-            write(ns, buffer, k);
+            write(ns, buffer, sizeof(buffer));
         }
         close(ns);
         close(sock);
@@ -83,7 +82,7 @@ int main(int argc, char** argv)
         while( (k = read(ns, buffer, sizeof(buffer))) != 0)
         {
             printf("SERVER(Parent) RECIEVED: %s\n", buffer);
-            write(ns, buffer, k);
+            write(ns, buffer, sizeof(buffer));
         }
         
         close(ns);
@@ -94,3 +93,12 @@ int main(int argc, char** argv)
 
     return 0;
 }
+
+void *clientHandle( void* sock_addr )
+{
+    char readBuff[MAX_BUFFER];
+    char writeBuff[MAX_BUFFER];
+    
+
+}
+

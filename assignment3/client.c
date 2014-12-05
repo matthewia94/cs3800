@@ -1,16 +1,11 @@
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/socket.h> //defines socket
-#include <netdb.h>       /* define internet socket */ 
- 
-#define SERVER_PORT 9999     /* define a server port number */ 
+#include "chatroom.h" 
 
 int main( int argc, char* argv[])
 {
 	int sockDesc; //Used to store the descriptor that references the socket
 	struct sockaddr_in serverAddr = { AF_INET, htons( SERVER_PORT ) };
-	char buf[512];
-	char msg[512 + sizeof(argv[2]) + 2];
+	char buf[MAX_BUFFER];
+	char msg[MAX_BUFFER];
 	struct hostent *hp;
 
 	if( argc != 3 )
