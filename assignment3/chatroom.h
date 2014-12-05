@@ -14,7 +14,12 @@
 #include <sys/socket.h> //defines socket
 #include <netdb.h>      /* define internet socket */
 
+//define bools
+typedef int bool;
+enum { false, true };
+
 #define SERVER_PORT 9999
 #define MAX_BUFFER 512
+#define MAX_CLIENTS 12
 
 #endif
