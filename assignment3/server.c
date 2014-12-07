@@ -26,6 +26,9 @@ int main(int argc, char** argv)
 {
     //Mutex for client table
     pthread_mutex_t clientLock;
+    
+    //thread id
+    pthread_t tid;
 
     //Create the socket addresses for client and server
     struct sockaddr_in server_addr = { AF_INET, htons( SERVER_PORT ) };
@@ -34,8 +37,10 @@ int main(int argc, char** argv)
     bool success;
 
 	int client_len = sizeof( client_addr );
-	char buffer[512], *host;
+	char buffer[MAX_BUFFER], *host;
 	int sock, ns, k, pid;
+    
+    initClientList();
 
 	//Open the socket
 	if( ( sock = socket( AF_INET, SOCK_STREAM, 0 ) ) == -1 )
@@ -68,14 +73,16 @@ int main(int argc, char** argv)
             printf("Server: Accept failed\n");
             exit( 1 );
         }
-        
-        pthread_mutex_lock(&clientLock);
-        success = addClient(ns);
-        pthread_mutex_unlock(&clientLock);
-        
-        if(success)
+        else
         {
-            printf("Parent accept() was successful, a client has connected.\n");
+            pthread_mutex_lock(&clientLock);
+            success = addClient(ns);
+            pthread_mutex_unlock(&clientLock);
+        
+            if(success)
+            {
+                pthread_create(&tid, NULL, &clientHandle, (void*)ns);
+            }
         }
     }
 
@@ -146,19 +153,31 @@ void writeClients( char msg[] )
 void *clientHandle( void* sock_addr )
 {
     char buffer[MAX_BUFFER];
-    bool init;
-    int k, ns;
+    char username[MAX_BUFFER];
+    bool init = true;
+    int k, ns = (int*)sock_addr;
+    pthread_mutex_t writeLock;
     
-    printf("Parent accept() was successful, a client has connected.\n");
     //Data transfer on connected socket
     while( (k = read(ns, buffer, sizeof(buffer))) != 0)
     {
-        printf("SERVER RECIEVED: %s\n", buffer);
+        if(init)
+        {
+            strcpy(username, buffer);
+            strtok(username, ": ");
+            strcat(username, " has connected.");
+            writeClients(username);
+            init = false;
+        }
+        
+        pthread_mutex_lock(&writeLock);
+        strcat(buffer, "\n");
+        writeClients( buffer );
+        printf("%s", buffer);
+        pthread_mutex_unlock(&writeLock);
     }
     
-    writeClients( buffer ); 
-    
-    //close(ns);
-    //close(sock);
+    close(ns);
+    pthread_detach(pthread_self());
 }
 
