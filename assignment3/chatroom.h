@@ -14,6 +14,7 @@
 #include <sys/socket.h> //defines socket
 #include <netdb.h>      /* define internet socket */
 #include <signal.h>
+#include <pthread.h>
 
 //define bools
 typedef int bool;

@@ -12,9 +12,10 @@
 void *recieveHandle( void* fd );
 void signalHandler(int sig);
 
+int sockDesc; //Used to store the descriptor that references the socket
+
 int main( int argc, char* argv[])
 {
-	int sockDesc; //Used to store the descriptor that references the socket
 	struct sockaddr_in serverAddr = { AF_INET, htons( SERVER_PORT ) };
 	char buf[MAX_BUFFER];
 	char msg[MAX_BUFFER];
@@ -79,6 +80,13 @@ void *recieveHandle( void* fd )
     while( (k = read(ns, buffer, sizeof(buffer))) != 0)
     {
         printf("%s\n", buffer);
+        
+        if(strcmp(buffer, "Have a nice day!") == 0)
+        {
+            printf("Shutting down.\n");
+            close(sockDesc);
+            exit(0);
+        }
     }
 }
 

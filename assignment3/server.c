@@ -18,11 +18,15 @@ bool addClient( int fileDesc );
 void removeClient( int fileDesc );
 void writeClients( int ns, char msg[] );
 void *clientHandle( void* sock_addr );
+void signalHandler( int sig );
 
 //Create table of clients
 int clients[MAX_CLIENTS];
+int ns;
 //Mutex for client table
 pthread_mutex_t clientLock;
+//Mutex for writing to clients
+pthread_mutex_t writeLock;
 
 int main(int argc, char** argv)
 {   
@@ -37,7 +41,7 @@ int main(int argc, char** argv)
 
 	int client_len = sizeof( client_addr );
 	char buffer[MAX_BUFFER], *host;
-	int sock, ns, k, pid;
+	int sock, k, pid;
     
     initClientList();
 
@@ -63,6 +67,8 @@ int main(int argc, char** argv)
     }
 
     printf("Listening for clients...\n");
+    
+    signal(SIGINT, signalHandler);
     
     while(1)
     {
@@ -156,7 +162,6 @@ void *clientHandle( void* sock_addr )
     char msg[MAX_BUFFER];
     bool init = true;
     int k, ns = (int*)sock_addr;
-    pthread_mutex_t writeLock;
     
     //Data transfer on connected socket
     while( (k = read(ns, buffer, sizeof(buffer))) != 0)
@@ -200,4 +205,39 @@ void *clientHandle( void* sock_addr )
     
     pthread_detach(pthread_self());
 }
+
+void signalHandler( int sig )
+{
+    char msg[] = "Server will shut down in 10 seconds.";
+   
+    //Print shutdown message
+    pthread_mutex_lock(&writeLock);
+    printf("%s\n", msg);
+    writeClients(-1, msg);
+    pthread_mutex_unlock(&writeLock);
+    
+    //wait for 10 seconds
+    sleep(10);
+    
+    strcpy(msg, "Have a nice day!");
+    
+    //Signal shutdown
+    pthread_mutex_lock(&writeLock);
+    printf("%s\n", msg);
+    writeClients(-1, msg);
+    pthread_mutex_unlock(&writeLock);
+   
+    for(int i = 0; i < MAX_CLIENTS; i++)
+    {
+        if(clients[i] != -1)
+        {
+            close(clients[i]);
+        }
+    }
+    
+    close(ns);
+    
+    exit(0); 
+}
+
 
