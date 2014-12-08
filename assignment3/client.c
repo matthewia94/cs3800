@@ -9,7 +9,8 @@
 
 #include "chatroom.h" 
 
-void *recieveHandle( void* fd ); 
+void *recieveHandle( void* fd );
+void signalHandler(int sig);
 
 int main( int argc, char* argv[])
 {
@@ -48,16 +49,22 @@ int main( int argc, char* argv[])
 		exit(1);
 	}
     
+    signal(SIGINT, signalHandler);
     pthread_create(&reciever, NULL, &recieveHandle, (void*)sockDesc);
 	
-	printf( "Connect successful! Messages can now be sent to server\n" );
+	printf( "Welcome %s.\n", argv[2] );
+    
+    write( sockDesc, argv[2], MAX_BUFFER );
 
 	while( gets(&buf) != EOF )
 	{
-		strcpy(msg, argv[2]);
-		strcat(msg, ": ");
-		strcat(msg, buf);
-		write( sockDesc, msg, sizeof(msg) );
+		write( sockDesc, buf, sizeof(buf) );
+        if( strcmp(buf, "/quit") == 0 ||
+            strcmp(buf, "/exit") == 0 ||
+            strcmp(buf, "/part") == 0)
+        {
+            break;
+        }
 	}
 	
 	close(sockDesc);
@@ -73,7 +80,9 @@ void *recieveHandle( void* fd )
     {
         printf("%s\n", buffer);
     }
-    
-    close(ns);
-    pthread_detach(pthread_self());
+}
+
+void signalHandler(int sig)
+{
+    printf("\bPlease type /exit, /quit, or /part to quit!\n");
 }

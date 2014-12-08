@@ -21,12 +21,11 @@ void *clientHandle( void* sock_addr );
 
 //Create table of clients
 int clients[MAX_CLIENTS];
+//Mutex for client table
+pthread_mutex_t clientLock;
 
 int main(int argc, char** argv)
-{
-    //Mutex for client table
-    pthread_mutex_t clientLock;
-    
+{   
     //thread id
     pthread_t tid;
 
@@ -154,6 +153,7 @@ void *clientHandle( void* sock_addr )
 {
     char buffer[MAX_BUFFER];
     char username[MAX_BUFFER];
+    char msg[MAX_BUFFER];
     bool init = true;
     int k, ns = (int*)sock_addr;
     pthread_mutex_t writeLock;
@@ -164,19 +164,40 @@ void *clientHandle( void* sock_addr )
         if(init)
         {
             strcpy(username, buffer);
-            strtok(username, ": ");
-            strcat(username, " has connected.");
-            writeClients(ns, username);
+            strcat(buffer, " has connected.");
+            pthread_mutex_lock(&writeLock);
+            printf("%s\n", buffer);
+            writeClients(ns, buffer);
+            pthread_mutex_unlock(&writeLock);
             init = false;
         }
-        
-        pthread_mutex_lock(&writeLock);
-        writeClients( ns, buffer );
-        printf("%s\n", buffer);
-        pthread_mutex_unlock(&writeLock);
+        else if(strcmp(buffer, "/exit") == 0 ||
+                strcmp(buffer, "/quit") == 0 ||
+                strcmp(buffer, "/part") == 0)
+        {
+            pthread_mutex_lock(&clientLock);
+            removeClient(ns);
+            pthread_mutex_unlock(&clientLock);
+            strcat(username, " has left.");
+            pthread_mutex_lock(&writeLock);
+            printf("%s\n", username);
+            writeClients( ns, username);
+            pthread_mutex_unlock(&writeLock);
+            close(ns);
+            break;
+        }
+        else
+        {
+            strcpy(msg, username);
+            strcat(msg, ": ");
+            strcat(msg, buffer);
+            pthread_mutex_lock(&writeLock);
+            writeClients( ns, msg );
+            printf("%s\n", msg);
+            pthread_mutex_unlock(&writeLock);
+        }
     }
     
-    close(ns);
     pthread_detach(pthread_self());
 }
 
