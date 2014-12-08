@@ -16,7 +16,7 @@
 void initClientList( );
 bool addClient( int fileDesc );
 void removeClient( int fileDesc );
-void writeClients( char msg[] );
+void writeClients( int ns, char msg[] );
 void *clientHandle( void* sock_addr );
 
 //Create table of clients
@@ -138,14 +138,14 @@ void removeClient( int fileDesc )
     return;
 }
 
-void writeClients( char msg[] )
+void writeClients( int ns, char msg[] )
 {
     for(int i = 0; i < MAX_CLIENTS; i++)
     {
         //check client is valid
-        if(clients[i] > -1)
+        if(clients[i] > -1 && clients[i] != ns)
         {
-            write(clients[i], msg, sizeof(msg));
+            write(clients[i], msg, MAX_BUFFER);
         }
     }
 }
@@ -166,14 +166,13 @@ void *clientHandle( void* sock_addr )
             strcpy(username, buffer);
             strtok(username, ": ");
             strcat(username, " has connected.");
-            writeClients(username);
+            writeClients(ns, username);
             init = false;
         }
         
         pthread_mutex_lock(&writeLock);
-        strcat(buffer, "\n");
-        writeClients( buffer );
-        printf("%s", buffer);
+        writeClients( ns, buffer );
+        printf("%s\n", buffer);
         pthread_mutex_unlock(&writeLock);
     }
     

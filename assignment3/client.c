@@ -1,4 +1,15 @@
+/******************************************************************************
+* @file client.c
+* @brief The client source file for a chatroom application which is meant to
+*        work with server.c
+* @author Matt Anderson <mia2n4@mst.edu>
+*         Matt Gualdoni <mjg6y5@mst.edu>
+* @version 1.0
+******************************************************************************/
+
 #include "chatroom.h" 
+
+void *recieveHandle( void* fd ); 
 
 int main( int argc, char* argv[])
 {
@@ -7,6 +18,7 @@ int main( int argc, char* argv[])
 	char buf[MAX_BUFFER];
 	char msg[MAX_BUFFER];
 	struct hostent *hp;
+    pthread_t reciever;
 
 	if( argc != 3 )
 	{
@@ -28,7 +40,6 @@ int main( int argc, char* argv[])
 		perror( "Client: Socket could not be created" );
 		exit(1);
 	}
-	printf( "Socket created." );
 	
 	//Connect a socket
 	if( connect( sockDesc, (struct sockAddr*)&serverAddr, sizeof(serverAddr) ) == -1)
@@ -36,9 +47,10 @@ int main( int argc, char* argv[])
 		perror( "Client: Connect() failed:" );
 		exit(1);
 	}
+    
+    pthread_create(&reciever, NULL, &recieveHandle, (void*)sockDesc);
 	
-	printf( "Connect() successful! Messages can now be sent to server\n" );
-	printf( "Input a string:\n" );
+	printf( "Connect successful! Messages can now be sent to server\n" );
 
 	while( gets(&buf) != EOF )
 	{
@@ -46,13 +58,22 @@ int main( int argc, char* argv[])
 		strcat(msg, ": ");
 		strcat(msg, buf);
 		write( sockDesc, msg, sizeof(msg) );
-		printf("WRITE COMPLETE\n");
-		read( sockDesc, msg, sizeof(msg) );
-		printf( "SERVER ECHOED: %s\n", buf );
 	}
 	
 	close(sockDesc);
 	return(0);
 }
 
-	
+void *recieveHandle( void* fd )
+{
+    char buffer[MAX_BUFFER];
+    int k, ns = (int*)fd;
+    
+    while( (k = read(ns, buffer, sizeof(buffer))) != 0)
+    {
+        printf("%s\n", buffer);
+    }
+    
+    close(ns);
+    pthread_detach(pthread_self());
+}
